@@ -31,8 +31,20 @@ export default function CompanyPropertyPage() {
     }, []);
 
     const fetchCurrentUser = async () => { try { const r = await fetch('/api/auth/me'); if (r.ok) setCurrentUser(await r.json()); } catch (e) { console.error(e); } };
-    const fetchAssets = async () => { try { const r = await fetch('/api/assets-sheets'); setAssets(await r.json()); } catch (e) { console.error(e); } finally { setLoading(false); } };
-    const fetchDepartments = async () => { try { const r = await fetch('/api/departments-sheets'); setDepartments(await r.json()); } catch (e) { console.error(e); } };
+    const fetchAssets = async () => {
+        try {
+            const r = await fetch('/api/assets-sheets');
+            const data = await r.json();
+            setAssets(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); setAssets([]); } finally { setLoading(false); }
+    };
+    const fetchDepartments = async () => {
+        try {
+            const r = await fetch('/api/departments-sheets');
+            const data = await r.json();
+            setDepartments(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); setDepartments([]); }
+    };
 
     const handleDelete = async (id: number) => {
         if (!confirm('คุณต้องการลบทรัพย์สินนี้ใช่หรือไม่?')) return;
@@ -42,7 +54,7 @@ export default function CompanyPropertyPage() {
     const handleFormSuccess = () => { setShowForm(false); setEditingAsset(null); fetchAssets(); };
 
     const filteredAssets = assets.filter((asset) => {
-        const matchesSearch = !searchTerm || asset.name.toLowerCase().includes(searchTerm.toLowerCase()) || asset.caretaker.toLowerCase().includes(searchTerm.toLowerCase()) || (asset.description && asset.description.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesSearch = !searchTerm || (asset.name ?? '').toLowerCase().includes(searchTerm.toLowerCase()) || (asset.caretaker ?? '').toLowerCase().includes(searchTerm.toLowerCase()) || ((asset.description ?? '').toLowerCase().includes(searchTerm.toLowerCase()));
         const matchesDept = !filterDepartment || asset.department_name === filterDepartment;
         const matchesUsage = !filterUsageType || asset.usage_type === filterUsageType;
         return matchesSearch && matchesDept && matchesUsage;

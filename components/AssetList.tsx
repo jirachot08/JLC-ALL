@@ -24,9 +24,19 @@ const usageTypeColors = {
     CREATIVE: 'bg-gradient-to-r from-teal-100 to-cyan-100 text-teal-800 border border-teal-200 dark:from-teal-900/30 dark:to-cyan-900/30 dark:text-teal-300 dark:border-teal-700',
 };
 
+function normalizeUsageType(ut: string | undefined): keyof typeof usageTypeColors {
+    const u = String(ut ?? 'OTHER').trim().toUpperCase();
+    if (u in usageTypeColors) return u as keyof typeof usageTypeColors;
+    return 'OTHER';
+}
+
 export default function AssetList({ assets, onEdit, onDelete }: AssetListProps) {
-    const formatCurrency = (amount: number) => new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(amount);
-    const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    const formatCurrency = (amount: number) =>
+        new Intl.NumberFormat('th-TH', { style: 'currency', currency: 'THB' }).format(Number.isFinite(amount) ? amount : 0);
+    const formatDate = (dateString: string) => {
+        const d = new Date(dateString);
+        return Number.isNaN(d.getTime()) ? '—' : d.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+    };
 
     if (assets.length === 0) {
         return (
@@ -85,7 +95,7 @@ export default function AssetList({ assets, onEdit, onDelete }: AssetListProps) 
                                 <div className="col-span-1"><div className="text-base font-bold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">{formatCurrency(asset.purchase_cost)}</div></div>
                                 <div className="col-span-1"><div className="inline-block px-3 py-1.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-xl text-sm font-semibold border border-blue-200 dark:border-blue-700">{asset.department_name}</div></div>
                                 <div className="col-span-1"><div className="text-sm font-medium text-gray-700 dark:text-gray-300">{asset.caretaker}</div></div>
-                                <div className="col-span-1"><span className={`px-3 py-2 inline-flex text-xs leading-5 font-bold rounded-xl shadow-md ${usageTypeColors[asset.usage_type]}`}>{usageTypeLabels[asset.usage_type]}</span></div>
+                                <div className="col-span-1"><span className={`px-3 py-2 inline-flex text-xs leading-5 font-bold rounded-xl shadow-md ${usageTypeColors[normalizeUsageType(asset.usage_type)]}`}>{usageTypeLabels[normalizeUsageType(asset.usage_type)]}</span></div>
                                 <div className="col-span-1"><div className="text-xs text-gray-600 dark:text-gray-400 font-medium">{formatDate(asset.created_at)}</div></div>
                                 <div className="col-span-2">
                                     <div className="flex gap-2">
