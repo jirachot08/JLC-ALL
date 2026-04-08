@@ -323,8 +323,8 @@ export async function deleteAsset(id: number) {
 
 // User management functions
 export async function getAllUsers() {
-  const sheets = await getSheets();
   try {
+    const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
       range: `${SHEETS.USERS}!A2:D`,
@@ -339,6 +339,8 @@ export async function getAllUsers() {
       role: row[3] || 'user',
     }));
   } catch (error) {
+    // ไม่มี credentials / Sheet ดึงไม่ได้ (เช่น บน Vercel ยังไม่ตั้ง GOOGLE_*) → ใช้บัญชีจาก env
+    console.error('getAllUsers fallback:', error);
     return [
       {
         id: 1,
