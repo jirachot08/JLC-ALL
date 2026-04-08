@@ -3,8 +3,9 @@ import pool from '@/lib/db';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const [rows] = await pool.execute(
             `SELECT 
@@ -13,7 +14,7 @@ export async function GET(
       FROM assets a
       JOIN departments d ON a.department_id = d.id
       WHERE a.id = ?`,
-            [params.id]
+            [id]
         );
 
         const assets = rows as any[];
@@ -36,8 +37,9 @@ export async function GET(
 
 export async function PUT(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
         const body = await request.json();
         const { name, description, purchase_cost, department_id, caretaker, usage_type } = body;
@@ -51,7 +53,7 @@ export async function PUT(
 
         await pool.execute(
             'UPDATE assets SET name = ?, description = ?, purchase_cost = ?, department_id = ?, caretaker = ?, usage_type = ? WHERE id = ?',
-            [name, description || null, purchase_cost, department_id, caretaker, usage_type, params.id]
+            [name, description || null, purchase_cost, department_id, caretaker, usage_type, id]
         );
 
         return NextResponse.json({ success: true });
@@ -66,10 +68,11 @@ export async function PUT(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    { params }: { params: Promise<{ id: string }> }
 ) {
+    const { id } = await params;
     try {
-        await pool.execute('DELETE FROM assets WHERE id = ?', [params.id]);
+        await pool.execute('DELETE FROM assets WHERE id = ?', [id]);
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error('Error deleting asset:', error);

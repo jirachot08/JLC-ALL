@@ -2,7 +2,7 @@
 
 interface Asset {
     id: number; name: string; image_url?: string; description: string;
-    purchase_cost: number; department_name: string; caretaker: string;
+    purchase_cost: number; department_id: number; department_name: string; caretaker: string;
     usage_type: 'LIVE' | 'PRODUCTION' | 'OTHER' | 'EDITOR' | 'GRAPHIC' | 'CREATIVE';
     created_at: string;
 }
