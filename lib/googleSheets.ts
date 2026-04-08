@@ -52,12 +52,69 @@ export async function getSheets() {
 
 export const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID || '';
 
-// Sheet names
+// Sheet names (ค่าเริ่มต้น — ชีต users อาจระบุด้วย GOOGLE_SHEET_USERS_GID หรือ GOOGLE_SHEET_USERS_NAME)
 export const SHEETS = {
   DEPARTMENTS: 'departments',
   ASSETS: 'assets',
   USERS: 'users',
 };
+
+let usersSheetTitleCache: string | null = null;
+
+/** รีเซ็ตแคชชื่อแท็บ users (เช่น หลังเปลี่ยน env ในเทส) */
+export function clearUsersSheetTitleCache() {
+  usersSheetTitleCache = null;
+}
+
+/**
+ * ชื่อแท็บชีต users สำหรับ Sheets API
+ * - GOOGLE_SHEET_USERS_NAME = ชื่อแท็บตรงๆ
+ * - GOOGLE_SHEET_USERS_GID = gid จาก URL (เช่น 866934488) จะดึงชื่อแท็บจริงจาก API
+ * - ไม่ระบุ → ใช้ชื่อ "users"
+ */
+export async function getUsersSheetTitle(): Promise<string> {
+  if (usersSheetTitleCache) return usersSheetTitleCache;
+
+  const explicit = process.env.GOOGLE_SHEET_USERS_NAME?.trim();
+  if (explicit) {
+    usersSheetTitleCache = explicit;
+    return explicit;
+  }
+
+  const gidStr = process.env.GOOGLE_SHEET_USERS_GID?.trim();
+  if (gidStr && SPREADSHEET_ID) {
+    const targetGid = parseInt(gidStr, 10);
+    if (!Number.isNaN(targetGid)) {
+      const api = await getSheets();
+      const res = await api.spreadsheets.get({ spreadsheetId: SPREADSHEET_ID });
+      const found = res.data.sheets?.find((s) => s.properties?.sheetId === targetGid);
+      if (found?.properties?.title) {
+        usersSheetTitleCache = found.properties.title;
+        return found.properties.title;
+      }
+    }
+  }
+
+  usersSheetTitleCache = SHEETS.USERS;
+  return SHEETS.USERS;
+}
+
+/** สร้าง range แบบ 'ชื่อแท็บ'!A2:D */
+async function usersValuesRange(a1Range: string): Promise<string> {
+  const title = await getUsersSheetTitle();
+  const quoted = `'${title.replace(/'/g, "''")}'`;
+  return `${quoted}!${a1Range}`;
+}
+
+/** sheetId สำหรับ batchUpdate (เท่ากับ gid ใน URL) */
+async function getUsersSheetIdForBatch(): Promise<number> {
+  const gidStr = process.env.GOOGLE_SHEET_USERS_GID?.trim();
+  if (gidStr) {
+    const n = parseInt(gidStr, 10);
+    if (!Number.isNaN(n)) return n;
+  }
+  return getSheetId(await getUsersSheetTitle());
+}
 
 // Forecast Stock Config
 export const FORECAST_SPREADSHEET_ID = '15hAf_tG2jqiEGT71Bo6Yfp75E7OGw6wUTJhOWcocbtI';
@@ -327,7 +384,7 @@ export async function getAllUsers() {
     const sheets = await getSheets();
     const response = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${SHEETS.USERS}!A2:D`,
+      range: await usersValuesRange('A2:D'),
     });
 
     const rows = response.data.values || [];
@@ -368,7 +425,7 @@ export async function createUser(data: {
 
   await sheets.spreadsheets.values.append({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEETS.USERS}!A:D`,
+    range: await usersValuesRange('A:D'),
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [
@@ -412,7 +469,7 @@ export async function updateUser(
 
   const existingRowResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEETS.USERS}!A${rowNumber}:D${rowNumber}`,
+    range: await usersValuesRange(`A${rowNumber}:D${rowNumber}`),
   });
 
   const existingRow = existingRowResponse.data.values?.[0] || [];
@@ -430,7 +487,7 @@ export async function updateUser(
 
   await sheets.spreadsheets.values.update({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEETS.USERS}!A${rowNumber}:D${rowNumber}`,
+    range: await usersValuesRange(`A${rowNumber}:D${rowNumber}`),
     valueInputOption: 'USER_ENTERED',
     requestBody: {
       values: [updatedData],
@@ -452,7 +509,7 @@ export async function deleteUser(id: number) {
 
   const allRowsResponse = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${SHEETS.USERS}!A2:D`,
+    range: await usersValuesRange('A2:D'),
   });
 
   const allRows = allRowsResponse.data.values || [];
@@ -478,7 +535,7 @@ export async function deleteUser(id: number) {
         {
           deleteDimension: {
             range: {
-              sheetId: await getSheetId(SHEETS.USERS),
+              sheetId: await getUsersSheetIdForBatch(),
               dimension: 'ROWS',
               startIndex: rowNumber - 1,
               endIndex: rowNumber,
