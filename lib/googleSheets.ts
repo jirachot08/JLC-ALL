@@ -427,6 +427,7 @@ export async function createUser(data: {
     spreadsheetId: SPREADSHEET_ID,
     range: await usersValuesRange('A:D'),
     valueInputOption: 'USER_ENTERED',
+    insertDataOption: 'INSERT_ROWS',
     requestBody: {
       values: [
         [

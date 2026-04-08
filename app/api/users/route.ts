@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAllUsers, createUser } from '@/lib/googleSheets';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export async function GET() {
     try {
         const users = await getAllUsers();
         const safeUsers = users.map(({ password, ...user }) => user);
-        return NextResponse.json(safeUsers);
+        return NextResponse.json(safeUsers, {
+            headers: {
+                'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+            },
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
         return NextResponse.json(

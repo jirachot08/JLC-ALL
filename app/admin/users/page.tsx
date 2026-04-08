@@ -21,7 +21,13 @@ export default function UsersManagementPage() {
     }, []);
 
     const fetchCurrentUser = async () => { try { const r = await fetch('/api/auth/me'); if (r.ok) setCurrentUser(await r.json()); } catch (e) { console.error(e); } };
-    const fetchUsers = async () => { try { const r = await fetch('/api/users'); setUsers(await r.json()); } catch (e) { console.error(e); } finally { setLoading(false); } };
+    const fetchUsers = async () => {
+        try {
+            const r = await fetch(`/api/users?t=${Date.now()}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } });
+            const data = await r.json();
+            setUsers(Array.isArray(data) ? data : []);
+        } catch (e) { console.error(e); } finally { setLoading(false); }
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault(); setSubmitting(true);
