@@ -8,7 +8,8 @@
     "start": "next start",
     "lint": "next lint",
     "env:merge-google": "node scripts/merge-google-into-env.mjs",
-    "env:vercel-export": "node scripts/export-vercel-env.mjs"
+    "env:vercel-export": "node scripts/export-vercel-env.mjs",
+    "vercel:users-gid": "node scripts/vercel-add-users-gid.mjs"
   },
   "dependencies": {
     "@types/node": "^25.0.3",

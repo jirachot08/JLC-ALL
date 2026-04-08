@@ -4,3 +4,4 @@ node_modules/
 *.log
 google-credentials.json
 vercel-env-import.env
+.env.vercel.local
